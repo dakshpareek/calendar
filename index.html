@@ -429,14 +429,29 @@
   }
 
   function copyLink() {
-    const btn = document.getElementById('sheetCopy');
-    const url = location.href.split('#')[0] + '#' + hashFromRange(selRange);
-    navigator.clipboard.writeText(url).then(() => {
+    const btn  = document.getElementById('sheetCopy');
+    const url  = location.href.split('#')[0] + '#' + hashFromRange(selRange);
+    const done = () => {
       if (!btn) return;
       const orig = btn.textContent;
       btn.textContent = 'copied!';
       setTimeout(() => { if (btn) btn.textContent = orig; }, 1500);
-    });
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(url, done));
+    } else {
+      fallbackCopy(url, done);
+    }
+  }
+
+  function fallbackCopy(text, cb) {
+    const el = document.createElement('input');
+    el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;font-size:16px';
+    document.body.appendChild(el);
+    el.focus(); el.setSelectionRange(0, text.length);
+    try { document.execCommand('copy'); cb(); } catch(_) {}
+    document.body.removeChild(el);
   }
 
   function showSheet() { refreshSheet(); sheet.classList.add('up'); }
@@ -495,17 +510,18 @@
   }, { passive: true });
 
   document.addEventListener('touchend', (e) => {
-    const t  = e.changedTouches[0];
-    const dx = t.clientX - tStartX;
-    const dy = t.clientY - tStartY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
+    const t     = e.changedTouches[0];
+    const dx    = t.clientX - tStartX;
+    const dy    = t.clientY - tStartY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
 
-    if (dist < 12 && tStartCell) {
+    if (absDx > 50 && absDx > absDy * 1.5) {
+      // Clear horizontal swipe anywhere → navigate
+      shift(dx < 0 ? 1 : -1);
+    } else if (absDx < 15 && absDy < 15 && tStartCell) {
       // Tap on a cell
       handleDateTap(cellDate(tStartCell));
-    } else if (dist > 40 && Math.abs(dx) > Math.abs(dy) * 1.5 && !tStartCell) {
-      // Horizontal swipe on non-cell area
-      shift(dx < 0 ? 1 : -1);
     }
   }, { passive: true });
 
