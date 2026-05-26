@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FAEFD8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1F170D" media="(prefers-color-scheme: dark)">
+<title>Calendar</title>
+<meta name="description" content="A quiet monthly calendar — weekends in warm peach.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23FAEFD8'/%3E%3Crect x='72' width='28' height='100' fill='%23F4D5B5'/%3E%3Ctext x='42' y='68' font-family='Georgia,serif' font-style='italic' font-size='60' fill='%233D2A14' text-anchor='middle'%3Em%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --page-bg: #F0E5C9;
+    --card-bg: #FAEFD8;
+    --card-border: #E0CDA9;
+    --ink: #3D2A14;
+    --accent: #7F3E1F;
+    --strip: #F4D5B5;
+    --strip-ink: #7F3E1F;
+    --today-bg: #2A1810;
+    --today-fg: #FAEFD8;
+    --muted: #9B7849;
+    --nav-hover: rgba(127, 62, 31, 0.08);
+    --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #14100A;
+      --card-bg: #1F170D;
+      --card-border: #3A2A1A;
+      --ink: #E8D7B0;
+      --accent: #D9A05F;
+      --strip: #2E2113;
+      --strip-ink: #E0A85A;
+      --today-bg: #E8D7B0;
+      --today-fg: #1F170D;
+      --muted: #8B7349;
+      --nav-hover: rgba(217, 160, 95, 0.1);
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    gap: 18px;
+  }
+  main {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .card {
+    width: 100%;
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+    padding-top: 26px;
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 26px 26px;
+    gap: 14px;
+  }
+  .nav {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    line-height: 1;
+    flex: 0 0 auto;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .nav:hover { background: var(--nav-hover); }
+  .nav:active { opacity: 0.7; }
+  .nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .title {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-style: italic;
+    letter-spacing: -0.005em;
+    text-align: center;
+    line-height: 1;
+    flex: 1 1 auto;
+    color: var(--ink);
+    margin: 0;
+    font-weight: 400;
+  }
+  .title .year {
+    font-style: normal;
+    font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-left: 6px;
+    vertical-align: 2px;
+  }
+  .dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-align: center;
+  }
+  .dow > div { padding: 8px 0; }
+  .dow .wk { background: var(--strip); color: var(--strip-ink); }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .cell {
+    padding: 18px 0;
+    text-align: center;
+    font-family: var(--serif);
+    font-size: 19px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .cell.wk {
+    background: var(--strip);
+    color: var(--strip-ink);
+  }
+  .cell.today span {
+    background: var(--today-bg);
+    color: var(--today-fg);
+    padding: 4px 11px;
+    border-radius: 2px;
+    font-style: normal;
+    font-weight: 500;
+    display: inline-block;
+  }
+  .cell.empty { color: transparent; }
+  .hint {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hint button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--accent);
+    letter-spacing: inherit;
+    cursor: pointer;
+    text-transform: inherit;
+  }
+  .hint button:hover { text-decoration: underline; }
+  .hint button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  .hint .sep { opacity: 0.6; }
+  @media (max-width: 480px) {
+    body { padding: 14px 10px; gap: 14px; }
+    .head { margin: 0 16px 20px; gap: 10px; }
+    .title { font-size: 26px; }
+    .title .year { font-size: 13px; }
+    .cell { padding: 14px 0; font-size: 17px; }
+    .nav { padding: 6px 11px; font-size: 14px; }
+    .hint { font-size: 10px; letter-spacing: 0.15em; gap: 10px; }
+  }
+  @media print {
+    body { background: white; padding: 0; }
+    .nav, .hint { display: none; }
+    .card { border: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="cal" role="region" aria-label="Monthly calendar"></div>
+  <p class="hint">
+    <span>← → months</span>
+    <span class="sep">·</span>
+    <button id="todayBtn" type="button">today</button>
+  </p>
+</main>
+<script>
+(function() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now = new Date();
+  const today = { y: now.getFullYear(), m: now.getMonth(), d: now.getDate() };
+  const state = { y: today.y, m: today.m };
+  const cal = document.getElementById('cal');
+  const todayBtn = document.getElementById('todayBtn');
+
+  cal.innerHTML = `
+    <div class="head">
+      <button class="nav" type="button" data-act="prev" aria-label="Previous month">←</button>
+      <h1 class="title"><span class="m"></span> <span class="year"></span></h1>
+      <button class="nav" type="button" data-act="next" aria-label="Next month">→</button>
+    </div>
+    <div class="dow">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div class="wk">Sat</div><div class="wk">Sun</div>
+    </div>
+    <div class="grid"></div>
+  `;
+
+  const monthEl = cal.querySelector('.m');
+  const yearEl = cal.querySelector('.year');
+  const gridEl = cal.querySelector('.grid');
+
+  function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  function daysIn(y, m) { return [31, isLeap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m]; }
+
+  function buildWeeks(y, m) {
+    const first = new Date(y, m, 1);
+    const start = (first.getDay() + 6) % 7;
+    const total = daysIn(y, m);
+    const weeks = [];
+    let d = 1;
+    const fw = Array(start).fill(null);
+    for (let i = start; i < 7 && d <= total; i++) fw.push(d++);
+    weeks.push(fw);
+    while (d <= total) {
+      const r = [];
+      for (let i = 0; i < 7 && d <= total; i++) r.push(d++);
+      while (r.length < 7) r.push(null);
+      weeks.push(r);
+    }
+    return weeks;
+  }
+
+  function render() {
+    const { y, m } = state;
+    monthEl.textContent = MONTHS[m];
+    yearEl.textContent = y;
+    document.title = `${MONTHS[m]} ${y}`;
+
+    const weeks = buildWeeks(y, m);
+    const cellsHtml = weeks.flat().map((d, i) => {
+      const col = i % 7;
+      const isWk = col >= 5;
+      const cls = ['cell'];
+      if (isWk) cls.push('wk');
+      if (d === null) {
+        cls.push('empty');
+        return `<div class="${cls.join(' ')}"></div>`;
+      }
+      const isTd = y === today.y && m === today.m && d === today.d;
+      if (isTd) {
+        cls.push('today');
+        return `<div class="${cls.join(' ')}"><span>${d}</span></div>`;
+      }
+      return `<div class="${cls.join(' ')}">${d}</div>`;
+    }).join('');
+    gridEl.innerHTML = cellsHtml;
+  }
+
+  function shift(delta) {
+    state.m += delta;
+    if (state.m < 0) { state.m = 11; state.y--; }
+    else if (state.m > 11) { state.m = 0; state.y++; }
+    render();
+  }
+
+  function jumpToToday() {
+    state.y = today.y;
+    state.m = today.m;
+    render();
+  }
+
+  cal.querySelector('[data-act="prev"]').addEventListener('click', () => shift(-1));
+  cal.querySelector('[data-act="next"]').addEventListener('click', () => shift(1));
+  todayBtn.addEventListener('click', jumpToToday);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') { shift(-1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { shift(1); e.preventDefault(); }
+    else if (e.key === 't' || e.key === 'T') { jumpToToday(); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
