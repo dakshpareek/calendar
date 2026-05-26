@@ -22,6 +22,9 @@
     --today-fg: #FAEFD8;
     --muted: #9B7849;
     --nav-hover: rgba(127, 62, 31, 0.08);
+    --sel-fill: rgba(127, 62, 31, 0.12);
+    --sel-cap: #7F3E1F;
+    --sel-cap-fg: #FAEFD8;
     --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   }
@@ -38,6 +41,9 @@
       --today-fg: #1F170D;
       --muted: #8B7349;
       --nav-hover: rgba(217, 160, 95, 0.1);
+      --sel-fill: rgba(217, 160, 95, 0.16);
+      --sel-cap: #D9A05F;
+      --sel-cap-fg: #1F170D;
     }
   }
   *, *::before, *::after { box-sizing: border-box; }
@@ -134,6 +140,9 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .cell {
     padding: 18px 0;
@@ -142,11 +151,10 @@
     font-size: 19px;
     color: var(--ink);
     line-height: 1;
+    cursor: pointer;
   }
-  .cell.wk {
-    background: var(--strip);
-    color: var(--strip-ink);
-  }
+  .cell.empty { color: transparent; cursor: default; }
+  .cell.wk { background: var(--strip); color: var(--strip-ink); }
   .cell.today span {
     background: var(--today-bg);
     color: var(--today-fg);
@@ -156,7 +164,94 @@
     font-weight: 500;
     display: inline-block;
   }
-  .cell.empty { color: transparent; }
+  /* Selection */
+  .cell.sel-mid { background: var(--sel-fill); }
+  .cell.sel-start { background: linear-gradient(to right, transparent 50%, var(--sel-fill) 50%); }
+  .cell.sel-end   { background: linear-gradient(to left,  transparent 50%, var(--sel-fill) 50%); }
+  .cell.sel-single { background: transparent; }
+  .cell.wk.sel-mid   { background: var(--sel-fill); }
+  .cell.wk.sel-start { background: linear-gradient(to right, var(--strip) 50%, var(--sel-fill) 50%); }
+  .cell.wk.sel-end   { background: linear-gradient(to left,  var(--strip) 50%, var(--sel-fill) 50%); }
+  .cell .cap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sel-cap);
+    color: var(--sel-cap-fg);
+    font-style: normal;
+    font-weight: 500;
+    animation: capenter 0.16s ease-out;
+  }
+  @keyframes capenter {
+    from { transform: scale(0.55); }
+    to   { transform: scale(1); }
+  }
+  /* Bottom sheet */
+  .sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    padding: 18px 24px calc(18px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transform: translateY(110%);
+    transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+    z-index: 10;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .sheet.up { transform: translateY(0); }
+  .sheet-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .sheet-range {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-style: italic;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sheet-days {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sheet-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .sheet-copy {
+    background: var(--accent);
+    color: var(--card-bg);
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .sheet-copy:active { opacity: 0.75; }
+  .sheet-clear {
+    background: transparent;
+    color: var(--muted);
+    border: 0.5px solid var(--card-border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .sheet-clear:active { opacity: 0.7; }
   .hint {
     font-family: var(--sans);
     font-size: 11px;
@@ -189,10 +284,14 @@
     .cell { padding: 14px 0; font-size: 17px; }
     .nav { padding: 6px 11px; font-size: 14px; }
     .hint { font-size: 10px; letter-spacing: 0.15em; gap: 10px; }
+    .sheet { padding: 16px 18px calc(16px + env(safe-area-inset-bottom)); }
+    .sheet-range { font-size: 17px; }
+    .sheet-copy { padding: 8px 14px; font-size: 12px; }
+    .sheet-clear { padding: 8px 11px; font-size: 12px; }
   }
   @media print {
     body { background: white; padding: 0; }
-    .nav, .hint { display: none; }
+    .nav, .hint, .sheet { display: none; }
     .card { border: none; }
   }
 </style>
@@ -206,14 +305,35 @@
     <button id="todayBtn" type="button">today</button>
   </p>
 </main>
+<div class="sheet" id="sheet">
+  <div class="sheet-info">
+    <span class="sheet-range" id="sheetRange"></span>
+    <span class="sheet-days" id="sheetDays"></span>
+  </div>
+  <div class="sheet-actions">
+    <button class="sheet-copy" id="sheetCopy">copy link</button>
+    <button class="sheet-clear" id="sheetClear">clear</button>
+  </div>
+</div>
 <script>
 (function() {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const now = new Date();
   const today = { y: now.getFullYear(), m: now.getMonth(), d: now.getDate() };
   const state = { y: today.y, m: today.m };
-  const cal = document.getElementById('cal');
-  const todayBtn = document.getElementById('todayBtn');
+
+  let selRange = null;
+  let painting = false;
+  let paintAnchor = null;
+  let touchSelectMode = false;
+
+  const cal       = document.getElementById('cal');
+  const todayBtn  = document.getElementById('todayBtn');
+  const sheet     = document.getElementById('sheet');
+  const sheetRange = document.getElementById('sheetRange');
+  const sheetDays  = document.getElementById('sheetDays');
+  const sheetCopy  = document.getElementById('sheetCopy');
+  const sheetClear = document.getElementById('sheetClear');
 
   cal.innerHTML = `
     <div class="head">
@@ -228,9 +348,21 @@
   `;
 
   const monthEl = cal.querySelector('.m');
-  const yearEl = cal.querySelector('.year');
-  const gridEl = cal.querySelector('.grid');
+  const yearEl  = cal.querySelector('.year');
+  const gridEl  = cal.querySelector('.grid');
 
+  // --- Date helpers ---
+  function sameDate(a, b) { return a && b && a.y === b.y && a.m === b.m && a.d === b.d; }
+  function dateCmp(a, b)  { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); }
+  function orderedRange(a, b) { return dateCmp(a, b) <= 0 ? { start: a, end: b } : { start: b, end: a }; }
+  function inRange(date, range) { return range && dateCmp(date, range.start) >= 0 && dateCmp(date, range.end) <= 0; }
+  function cellDate(el) {
+    if (!el || !el.dataset.date) return null;
+    const [y, m, d] = el.dataset.date.split('-').map(Number);
+    return { y, m, d };
+  }
+
+  // --- Calendar math ---
   function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
   function daysIn(y, m) { return [31, isLeap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m]; }
 
@@ -252,64 +384,225 @@
     return weeks;
   }
 
+  // --- Render ---
   function render() {
     const { y, m } = state;
     monthEl.textContent = MONTHS[m];
-    yearEl.textContent = y;
+    yearEl.textContent  = y;
     document.title = `${MONTHS[m]} ${y}`;
 
-    const weeks = buildWeeks(y, m);
-    const cellsHtml = weeks.flat().map((d, i) => {
-      const col = i % 7;
-      const isWk = col >= 5;
-      const cls = ['cell'];
+    const isSingle = selRange && sameDate(selRange.start, selRange.end);
+
+    const cellsHtml = buildWeeks(y, m).flat().map((d, i) => {
+      const isWk = (i % 7) >= 5;
+      const cls  = ['cell'];
       if (isWk) cls.push('wk');
+
       if (d === null) {
         cls.push('empty');
         return `<div class="${cls.join(' ')}"></div>`;
       }
-      const isTd = y === today.y && m === today.m && d === today.d;
-      if (isTd) {
-        cls.push('today');
-        return `<div class="${cls.join(' ')}"><span>${d}</span></div>`;
+
+      const dateObj = { y, m, d };
+      const attr    = `data-date="${y}-${m}-${d}"`;
+      const isTd    = sameDate(dateObj, today);
+
+      let selCls = null;
+      if (selRange && inRange(dateObj, selRange)) {
+        if (isSingle)                              selCls = 'sel-single';
+        else if (sameDate(dateObj, selRange.start)) selCls = 'sel-start';
+        else if (sameDate(dateObj, selRange.end))   selCls = 'sel-end';
+        else                                        selCls = 'sel-mid';
       }
-      return `<div class="${cls.join(' ')}">${d}</div>`;
+
+      if (selCls) cls.push(selCls);
+      if (isTd && !selCls) cls.push('today');
+
+      const clsStr = cls.join(' ');
+      const isCap  = selCls === 'sel-start' || selCls === 'sel-end' || selCls === 'sel-single';
+
+      if (isCap)          return `<div class="${clsStr}" ${attr}><span class="cap">${d}</span></div>`;
+      if (isTd && !selCls) return `<div class="${clsStr}" ${attr}><span>${d}</span></div>`;
+      return `<div class="${clsStr}" ${attr}>${d}</div>`;
     }).join('');
+
     gridEl.innerHTML = cellsHtml;
   }
 
+  // --- Navigation ---
   function shift(delta) {
     state.m += delta;
-    if (state.m < 0) { state.m = 11; state.y--; }
+    if (state.m < 0)  { state.m = 11; state.y--; }
     else if (state.m > 11) { state.m = 0; state.y++; }
     render();
   }
 
-  function jumpToToday() {
-    state.y = today.y;
-    state.m = today.m;
+  function jumpToToday() { state.y = today.y; state.m = today.m; render(); }
+
+  // --- Paint selection ---
+  function startPaint(date) {
+    painting = true;
+    paintAnchor = date;
+    selRange = { start: date, end: date };
+    updateHash();
     render();
+    showSheet();
   }
+
+  function movePaint(date) {
+    if (!painting || !paintAnchor) return;
+    const nr = orderedRange(paintAnchor, date);
+    if (!selRange || !sameDate(nr.start, selRange.start) || !sameDate(nr.end, selRange.end)) {
+      selRange = nr;
+      updateHash();
+      render();
+      updateSheet();
+    }
+  }
+
+  function endPaint() { painting = false; }
+
+  function clearSelection() {
+    selRange = null;
+    painting = false;
+    updateHash();
+    render();
+    hideSheet();
+  }
+
+  // --- Sheet ---
+  function daysBetween(a, b) {
+    return Math.round(Math.abs(new Date(b.y, b.m, b.d) - new Date(a.y, a.m, a.d)) / 86400000) + 1;
+  }
+
+  function updateSheet() {
+    if (!selRange) return;
+    const { start, end } = selRange;
+    if (sameDate(start, end)) {
+      sheetRange.textContent = `${MONTHS[start.m]} ${start.d}, ${start.y}`;
+      sheetDays.textContent  = '1 day';
+    } else {
+      const days = daysBetween(start, end);
+      sheetRange.textContent = (start.m === end.m && start.y === end.y)
+        ? `${MONTHS[start.m]} ${start.d} – ${end.d}`
+        : `${MONTHS[start.m].slice(0,3)} ${start.d} – ${MONTHS[end.m].slice(0,3)} ${end.d}`;
+      sheetDays.textContent = `${days} day${days !== 1 ? 's' : ''}`;
+    }
+  }
+
+  function showSheet() { updateSheet(); sheet.classList.add('up'); }
+  function hideSheet() { sheet.classList.remove('up'); }
+
+  // --- URL hash ---
+  function fmtD(d) {
+    return `${d.y}-${String(d.m + 1).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+
+  function hashFromRange(range) {
+    if (!range) return '';
+    return sameDate(range.start, range.end) ? fmtD(range.start) : `${fmtD(range.start)}_${fmtD(range.end)}`;
+  }
+
+  function updateHash() {
+    const h = hashFromRange(selRange);
+    history.replaceState(null, '', h ? `#${h}` : location.pathname + location.search);
+  }
+
+  function parseHash() {
+    const h = location.hash.slice(1);
+    if (!h) return null;
+    const parseD = s => {
+      const bits = s.split('-').map(Number);
+      return (bits.length === 3 && !bits.some(isNaN)) ? { y: bits[0], m: bits[1] - 1, d: bits[2] } : null;
+    };
+    const parts = h.split('_');
+    const start = parseD(parts[0]);
+    if (!start) return null;
+    const end = parts[1] ? parseD(parts[1]) : { ...start };
+    return end ? { start, end } : null;
+  }
+
+  // --- Mouse events ---
+  gridEl.addEventListener('mousedown', (e) => {
+    const cell = e.target.closest('[data-date]');
+    if (!cell) return;
+    e.preventDefault();
+    startPaint(cellDate(cell));
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!painting) return;
+    const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-date]');
+    if (cell) movePaint(cellDate(cell));
+  });
+
+  document.addEventListener('mouseup', () => { if (painting) endPaint(); });
+
+  // --- Touch events (paint on cells, swipe elsewhere) ---
+  let touchStartX = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    const cell = e.target.closest('[data-date]');
+    if (cell) {
+      touchSelectMode = true;
+      startPaint(cellDate(cell));
+    } else {
+      touchSelectMode = false;
+      touchStartX = e.changedTouches[0].clientX;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!touchSelectMode || !painting) return;
+    const t    = e.changedTouches[0];
+    const cell = document.elementFromPoint(t.clientX, t.clientY)?.closest('[data-date]');
+    if (cell) movePaint(cellDate(cell));
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (touchSelectMode) {
+      endPaint();
+      touchSelectMode = false;
+    } else {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) shift(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  // --- Keyboard ---
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft')              { shift(-1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight')        { shift(1);  e.preventDefault(); }
+    else if (e.key === 't' || e.key === 'T') { jumpToToday(); }
+    else if (e.key === 'Escape')            { clearSelection(); }
+  });
 
   cal.querySelector('[data-act="prev"]').addEventListener('click', () => shift(-1));
   cal.querySelector('[data-act="next"]').addEventListener('click', () => shift(1));
   todayBtn.addEventListener('click', jumpToToday);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'ArrowLeft') { shift(-1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight') { shift(1); e.preventDefault(); }
-    else if (e.key === 't' || e.key === 'T') { jumpToToday(); }
+  sheetCopy.addEventListener('click', () => {
+    const url = location.href.split('#')[0] + '#' + hashFromRange(selRange);
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = sheetCopy.textContent;
+      sheetCopy.textContent = 'copied!';
+      setTimeout(() => { sheetCopy.textContent = orig; }, 1500);
+    });
   });
 
-  let touchStartX = 0;
-  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
-  document.addEventListener('touchend', (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 50) shift(dx < 0 ? 1 : -1);
-  }, { passive: true });
+  sheetClear.addEventListener('click', clearSelection);
+
+  // --- Init ---
+  const initialRange = parseHash();
+  if (initialRange) {
+    selRange = initialRange;
+    state.y  = initialRange.start.y;
+    state.m  = initialRange.start.m;
+  }
 
   render();
+  if (selRange) showSheet();
 })();
 </script>
 </body>
